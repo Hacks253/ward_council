@@ -28,17 +28,10 @@
   .eyebrow{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--blue)}
   .bar h1{font-family:var(--serif);font-size:21px;font-weight:600;margin:1px 0 0;letter-spacing:-.01em}
   .bar .date{font-size:13px;color:var(--ink-2);margin-top:1px}
-  .state{flex:none;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:14px;background:var(--card);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
-  .state .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
-  .state.live{color:var(--blue);border-color:var(--blue)}
-  .state.live .dot{background:var(--blue);animation:pulse 2s infinite}
-  .state.closed{color:var(--green);border-color:var(--green)}
-  .state.closed .dot{background:var(--green)}
   .bar-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
   .outbtn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px 10px;cursor:pointer;white-space:nowrap}
   .outbtn:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
   .outbtn.hidden{display:none}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
   .live{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
   .live.on{display:block}
@@ -218,7 +211,6 @@
         <div class="date" id="hdrDate">&nbsp;</div>
       </div>
       <div class="bar-right">
-        <div class="state" id="stateChip"><span class="dot"></span><span id="stateTxt">Loading</span></div>
         <button class="outbtn hidden" id="logoutBtn">Sign out</button>
       </div>
     </div>
@@ -337,9 +329,6 @@ function renderLogin(msg){
   document.getElementById("tabs").classList.add("hidden");
   document.getElementById("logoutBtn").classList.add("hidden");
   document.getElementById("hdrDate").textContent = "Sign in to continue";
-  var chip = document.getElementById("stateChip");
-  chip.className = "state";
-  document.getElementById("stateTxt").textContent = "Signed out";
   document.getElementById("live").classList.remove("on","over");
 
   var app = el("app");
@@ -426,27 +415,17 @@ async function closeMeeting(){
 /* ============ live ticker ============ */
 function tickLive(){
   var live = document.getElementById("live");
-  var chip = document.getElementById("stateChip");
-  var txt  = document.getElementById("stateTxt");
   var m = STATE.meeting;
   if(!m || !STATE.user) return;
 
   var showLive = (STATE.view === "now" && m.status !== "closed");
   if(!showLive){
     live.classList.remove("on","over");
-    chip.className = "state" + (m.status === "closed" ? " closed" : "");
-    txt.textContent = STATE.view === "arc" ? "Records"
-                     : STATE.view === "edit" ? "Editing"
-                     : STATE.view === "people" ? "Admin"
-                     : STATE.view === "cal" ? "Away"
-                     : (m.status === "closed" ? "Archived" : "Draft");
     return;
   }
 
   var e = elapsed(m.date);
   if(e === null || e < 0 || e > LEN){
-    chip.className = "state";
-    txt.textContent = (e !== null && e > LEN) ? "Ended" : "Upcoming";
     live.classList.remove("on","over");
     var items0 = document.querySelectorAll(".item");
     for(var i=0;i<items0.length;i++) items0[i].classList.remove("is-now","is-done");
@@ -455,8 +434,6 @@ function tickLive(){
     return;
   }
 
-  chip.className = "state live";
-  txt.textContent = "Live";
   live.classList.add("on");
 
   var off = 0, cur = null, curOff = 0;
