@@ -4,10 +4,27 @@ First pass of the Ward Council app (Phase 1 of `docs/ward-council-prd.md`): auth
 agenda, live meeting view, close-and-snapshot, archive, and server-enforced confidentiality.
 The UI is a direct port of the reference mockup (`docs/ward-council-mobile.html`).
 
-## Run it
+## Run it locally
 
 ```sh
 docker compose up --build
+```
+
+This starts Postgres and the app; open http://localhost:3000.
+
+## Deploy (Vercel)
+
+The same Express app runs as a Vercel serverless function (`api/index.js`,
+routed via `vercel.json`); `public/` is served by the CDN. Storage is any
+Postgres reachable by `DATABASE_URL` (Neon via the Vercel marketplace works).
+
+Required production env vars: `DATABASE_URL`, `SESSION_SECRET`,
+`SEED_PASSWORD`, `APP_TZ` (e.g. `America/Los_Angeles` — "which Sunday is it"
+is computed in this timezone).
+
+```sh
+npx vercel integration add neon   # provision Postgres (accept terms once in browser)
+npx vercel deploy --prod
 ```
 
 Open http://localhost:3000 and sign in. Three users are seeded on first start
