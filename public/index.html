@@ -170,6 +170,25 @@
   .sim{margin-top:16px;text-align:center}
   .sim label{font-size:12px;color:var(--ink-3);display:block;margin-bottom:6px}
   .sim input{width:100%;max-width:300px}
+  /* month calendar */
+  .calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .calhead .m{font-family:var(--serif);font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .caldow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+  .caldow span{text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink-3);text-transform:uppercase}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cd{position:relative;min-height:46px;border:1.5px solid var(--line);border-radius:10px;background:#FCFDFD;font-family:var(--sans);font-size:13.5px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 0}
+  .cd .n{line-height:1}
+  .cd.sun .n{color:var(--blue);font-weight:600}
+  .cd.blank{border-color:transparent;background:transparent;cursor:default}
+  .cd.today{border-color:var(--blue)}
+  .cd.inrange{background:var(--blue-wash);border-color:var(--blue-wash)}
+  .cd.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+  .cd.sel .n{color:#fff}
+  .cd .dots{display:flex;gap:3px;height:5px}
+  .cd .dots i{width:5px;height:5px;border-radius:50%;background:var(--sand)}
+  .cd.sel .dots i{background:#fff}
+  .cd:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+
   .login{max-width:360px;margin:30px auto 0}
   .login h2{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0 0 12px;text-transform:none;color:var(--ink)}
 
@@ -669,6 +688,7 @@ async function renderCalendarView(){
   try{
     var r = await api("/api/absences");
     STATE.absences = r.absences;
+    if(!STATE.calMonth) STATE.calMonth = isoOf(new Date()).slice(0,7);
     syncAwayIntoMeeting();
     drawCalendar();
   }catch(e){
@@ -678,23 +698,88 @@ async function renderCalendarView(){
   }
 }
 
+function awayOn(iso){
+  return STATE.absences.filter(function(a){ return a.starts_on <= iso && a.ends_on >= iso; });
+}
+function monthLabel(ym){
+  var p = ym.split("-");
+  return new Date(+p[0], +p[1]-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+}
+function shiftMonth(ym, n){
+  var p = ym.split("-");
+  var d = new Date(+p[0], +p[1]-1+n, 1);
+  return d.getFullYear() + "-" + pad(d.getMonth()+1);
+}
+
 function drawCalendar(){
   var app = el("app");
   var today = isoOf(new Date());
-  var upcoming = STATE.absences.filter(function(a){ return a.ends_on >= today; });
+  var ym = STATE.calMonth;
+  var selS = STATE.calSelStart || null, selE = STATE.calSelEnd || null;
+  var prevName = el("abName") ? el("abName").value : "";
+  var prevFrom = el("abFrom") ? el("abFrom").value : "";
+  var prevTo = el("abTo") ? el("abTo").value : "";
 
-  var h = '<div class="banner edit">Add when people will be gone. The agenda\'s &ldquo;Away&rdquo; section pulls from this automatically.</div>';
+  var h = '<div class="banner edit">Tap a day, then a second day for a range, and add who is away. The agenda\'s &ldquo;Away&rdquo; section stays in sync.</div>';
 
+  /* month grid */
+  var p = ym.split("-"), y = +p[0], mo = +p[1];
+  var firstDow = new Date(y, mo-1, 1).getDay();
+  var dim = new Date(y, mo, 0).getDate();
+  h += '<section class="panel">';
+  h += '<div class="calhead"><button class="mini" id="calPrev" aria-label="Previous month">&lsaquo;</button>' +
+       '<span class="m">' + esc(monthLabel(ym)) + '</span>' +
+       '<button class="mini" id="calNext" aria-label="Next month">&rsaquo;</button></div>';
+  h += '<div class="caldow">' + ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(function(d){ return '<span>' + d + '</span>'; }).join("") + '</div>';
+  h += '<div class="calgrid">';
+  for(var b = 0; b < firstDow; b++) h += '<span class="cd blank"></span>';
+  for(var day = 1; day <= dim; day++){
+    var iso = ym + "-" + pad(day);
+    var who = awayOn(iso);
+    var cls = "cd";
+    if((day + firstDow - 1) % 7 === 0) cls += " sun";
+    if(iso === today) cls += " today";
+    if(iso === selS || iso === selE) cls += " sel";
+    else if(selS && selE && iso > selS && iso < selE) cls += " inrange";
+    var label = fmtLong(iso) + (who.length ? ", " + who.length + " away" : "");
+    h += '<button class="' + cls + '" data-d="' + iso + '" aria-label="' + esc(label) + '">' +
+         '<span class="n">' + day + '</span>' +
+         '<span class="dots">' + who.slice(0,3).map(function(){ return '<i></i>'; }).join("") + '</span>' +
+         '</button>';
+  }
+  h += '</div>';
+  h += '<div class="hint" style="text-align:left">Dots mark days someone is away. Sundays are council days.' +
+       (selS ? ' &middot; <button class="signout" id="calClear" style="font-size:inherit">Clear selection</button>' : '') + '</div>';
+  h += '</section>';
+
+  /* add form — dates follow the tapped selection */
+  var fromVal = selS || prevFrom;
+  var toVal = selS ? (selE || "") : prevTo;
   h += '<section class="panel"><h2>Add time away</h2>';
-  h += '<div class="ed-row"><input type="text" class="grow" id="abName" list="rosterNames" placeholder="Who"></div>';
+  h += '<div class="ed-row"><input type="text" class="grow" id="abName" list="rosterNames" placeholder="Who" value="' + esc(prevName) + '"></div>';
   h += '<datalist id="rosterNames">' + ((STATE.meeting && STATE.meeting.roster) || []).map(function(n){
     return '<option value="' + esc(n) + '">';
   }).join("") + '</datalist>';
-  h += '<div class="ed-row"><input type="date" class="grow" id="abFrom" aria-label="First day away"><input type="date" class="grow" id="abTo" aria-label="Last day away"></div>';
-  h += '<button class="mini add" id="abAdd">+ Add</button>';
-  h += '<div class="hint" style="text-align:left">First day and last day. Leave the second date empty for a single day.</div>';
+  h += '<div class="ed-row"><input type="date" class="grow" id="abFrom" aria-label="First day away" value="' + esc(fromVal) + '">' +
+       '<input type="date" class="grow" id="abTo" aria-label="Last day away" value="' + esc(toVal) + '"></div>';
+  h += '<button class="mini add" id="abAdd">+ Add' + (selS ? ' &middot; ' + esc(fmtRange(selS, selE || selS)) : '') + '</button>';
   h += '</section>';
 
+  /* who is away on the selected day */
+  if(selS && !selE){
+    var dayWho = awayOn(selS);
+    h += '<section class="panel"><h2>' + esc(fmtLong(selS)) + '</h2>';
+    if(!dayWho.length) h += '<div class="hint" style="text-align:left;margin:0">No one is away this day. Tap another day to make it a range.</div>';
+    else h += '<ul class="rows">' + dayWho.map(function(a){
+      return '<li class="split"><span>' + esc(a.name) +
+             '<span class="meta">' + esc(fmtRange(a.starts_on, a.ends_on)) + '</span></span>' +
+             '<button class="mini del" data-delabs="' + a.id + '">Remove</button></li>';
+    }).join("") + '</ul>';
+    h += '</section>';
+  }
+
+  /* upcoming list */
+  var upcoming = STATE.absences.filter(function(a){ return a.ends_on >= today; });
   h += '<section class="panel"><h2>Away now and upcoming</h2>';
   if(!upcoming.length){
     h += '<div class="hint" style="text-align:left;margin:0">No one has time away listed.</div>';
@@ -724,21 +809,46 @@ function syncAwayIntoMeeting(){
 
 function wireCalendar(){
   var app = el("app");
+
+  var prev = el("calPrev"), next = el("calNext"), clear = el("calClear");
+  if(prev) prev.addEventListener("click", function(){ STATE.calMonth = shiftMonth(STATE.calMonth, -1); drawCalendar(); });
+  if(next) next.addEventListener("click", function(){ STATE.calMonth = shiftMonth(STATE.calMonth, 1); drawCalendar(); });
+  if(clear) clear.addEventListener("click", function(){ STATE.calSelStart = STATE.calSelEnd = null; drawCalendar(); });
+
+  on(app, ".cd[data-d]", "click", function(t){
+    var iso = t.getAttribute("data-d");
+    if(!STATE.calSelStart || STATE.calSelEnd){
+      STATE.calSelStart = iso; STATE.calSelEnd = null;
+    } else if(iso === STATE.calSelStart){
+      STATE.calSelStart = null;
+    } else if(iso < STATE.calSelStart){
+      STATE.calSelStart = iso;
+    } else {
+      STATE.calSelEnd = iso;
+    }
+    drawCalendar();
+    var nameEl = el("abName");
+    if(nameEl && STATE.calSelStart && !nameEl.value) nameEl.focus();
+  });
+
   var add = el("abAdd");
   if(add) add.addEventListener("click", async function(){
     var name = (el("abName").value || "").trim();
     var from = el("abFrom").value;
     var to = el("abTo").value || from;
     if(!name){ toast("Add a name"); return; }
-    if(!from){ toast("Pick a date"); return; }
+    if(!from){ toast("Tap a day or pick a date"); return; }
     try{
       var r = await api("/api/absences", { method:"POST", body:{ name:name, startsOn:from, endsOn:to } });
       STATE.absences = r.absences;
+      STATE.calSelStart = STATE.calSelEnd = null;
+      var n = el("abName"); if(n) n.value = "";
       syncAwayIntoMeeting();
       drawCalendar();
       toast("Added");
     }catch(e){ toast(e.message); }
   });
+
   on(app, "[data-delabs]", "click", async function(t){
     try{
       var r = await api("/api/absences/" + t.getAttribute("data-delabs"), { method:"DELETE" });
