@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F1F3F2">
+<title>Ward Council</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F1F3F2; --card:#FFFFFF; --ink:#1F262B; --ink-2:#5C666E; --ink-3:#909AA1;
+    --line:#E3E7E5; --blue:#2E5470; --blue-wash:#E8EFF4; --sand:#9B6430; --sand-wash:#F7EFE6;
+    --green:#3A6B4E; --green-wash:#E9F1EC; --red:#8C3A3A;
+    --serif:"Literata",Georgia,serif;
+    --sans:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --tap:44px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;font-variant-numeric:tabular-nums;padding-bottom:env(safe-area-inset-bottom)}
+  .wrap{max-width:620px;margin:0 auto;padding:0 14px 70px}
+
+  .bar{position:sticky;top:0;z-index:20;background:rgba(241,243,242,.95);backdrop-filter:saturate(1.6) blur(10px);-webkit-backdrop-filter:saturate(1.6) blur(10px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 0 0}
+  .bar-in{max-width:620px;margin:0 auto;padding:0 14px 10px}
+  .bar-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--blue)}
+  .bar h1{font-family:var(--serif);font-size:21px;font-weight:600;margin:1px 0 0;letter-spacing:-.01em}
+  .bar .date{font-size:13px;color:var(--ink-2);margin-top:1px}
+  .state{flex:none;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:14px;background:var(--card);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+  .state .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+  .state.live{color:var(--blue);border-color:var(--blue)}
+  .state.live .dot{background:var(--blue);animation:pulse 2s infinite}
+  .state.closed{color:var(--green);border-color:var(--green)}
+  .state.closed .dot{background:var(--green)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .live{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+  .live.on{display:block}
+  .live-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .live-now{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .live-left{font-size:13px;font-weight:600;color:var(--ink-2);flex:none}
+  .live.over .live-left{color:var(--sand)}
+  .track{height:4px;background:var(--line);border-radius:2px;margin-top:7px;overflow:hidden}
+  .fill{height:100%;width:0;background:var(--blue);border-radius:2px;transition:width .9s linear}
+  .live.over .fill{background:var(--sand)}
+
+  .tabs{display:flex;gap:6px;margin-top:10px}
+  .tab{flex:1;min-height:38px;border:1px solid var(--line);background:var(--card);border-radius:9px;font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+  .tab[aria-selected="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+  .tab:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .tabs.hidden{display:none}
+  .tab.hidden{display:none}
+
+  .banner{margin-top:14px;border-radius:12px;padding:11px 13px;font-size:13.5px;line-height:1.45}
+  .banner.arch{background:var(--green-wash);color:var(--green)}
+  .banner.arch b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+  .banner.edit{background:var(--blue-wash);color:var(--blue)}
+  .banner.warn{background:var(--sand-wash);color:var(--sand)}
+
+  .panel{background:var(--card);border-radius:14px;padding:14px;margin-top:14px;box-shadow:0 1px 2px rgba(31,38,43,.05)}
+  .panel > h2{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+  .pills{display:flex;flex-wrap:wrap;gap:7px}
+  .pill{min-height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:18px;border:1.5px solid var(--line);background:var(--card);font-family:var(--sans);font-size:14px;color:var(--ink-2);cursor:pointer}
+  .pill[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:500}
+  .pill:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .pill[disabled]{cursor:default;opacity:.8}
+  .pill.static{cursor:default;background:var(--card);color:var(--ink);border-color:var(--line)}
+  .pill .x{font-size:17px;line-height:1;color:var(--ink-3);padding:0 2px;cursor:pointer}
+  .count{font-size:13px;color:var(--ink-3);margin-top:9px}
+
+  .stack{position:relative;margin-top:16px;padding-left:26px}
+  .stack::before{content:"";position:absolute;left:6px;top:14px;bottom:22px;width:2px;background:var(--line);border-radius:1px}
+  .stack::after{content:"";position:absolute;left:6px;top:14px;width:2px;height:var(--prog,0px);background:var(--blue);border-radius:1px;transition:height .9s linear}
+  .stack.plain{padding-left:0}
+  .stack.plain::before,.stack.plain::after{display:none}
+  .item{position:relative;background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(31,38,43,.05)}
+  .stack:not(.plain) .item::before{content:"";position:absolute;left:-26px;top:19px;width:11px;height:11px;border-radius:50%;background:var(--card);border:2.5px solid var(--line)}
+  .item.is-now::before{border-color:var(--blue);background:var(--blue);box-shadow:0 0 0 5px var(--blue-wash)}
+  .item.is-done::before{border-color:var(--blue);background:var(--blue)}
+  .item.is-now{box-shadow:0 0 0 1.5px var(--blue),0 4px 14px rgba(46,84,112,.13)}
+  .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .time{font-size:13px;font-weight:600;color:var(--ink-3);flex:none}
+  .item.is-now .time{color:var(--blue)}
+  .item h3{font-family:var(--serif);font-size:18px;font-weight:600;margin:0;letter-spacing:-.01em;flex:1 1 auto;min-width:0}
+  .mins{font-size:12px;color:var(--ink-3);flex:none}
+  .chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;padding:3px 7px;border-radius:4px;background:var(--blue-wash);color:var(--blue)}
+  .chip.carry{background:var(--sand-wash);color:var(--sand)}
+  .chiprow{margin-top:8px}
+  .lead{font-size:14px;color:var(--ink-2);margin:7px 0 0}
+  .list{margin:8px 0 0;padding-left:18px}
+  .list li{font-size:14.5px;color:var(--ink-2);margin-bottom:5px}
+  .sub{border-top:1px solid var(--line);margin-top:11px;padding-top:9px}
+  .sub h4{font-size:15px;font-weight:600;margin:0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .sub p{font-size:13.5px;color:var(--ink-2);margin:3px 0 0}
+  .held{margin-top:9px;font-size:13.5px;color:var(--sand);background:var(--sand-wash);border-radius:8px;padding:8px 10px}
+
+  details.notes{margin-top:11px}
+  details.notes > summary{list-style:none;cursor:pointer;min-height:38px;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--blue)}
+  details.notes > summary::-webkit-details-marker{display:none}
+  details.notes > summary::after{content:" +";font-weight:700;margin-left:5px}
+  details.notes[open] > summary::after{content:" \2013"}
+  textarea,input[type="text"],input[type="number"],input[type="password"],select{
+    font-family:var(--sans);font-size:15px;color:var(--ink);line-height:1.45;
+    border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#FCFDFD;width:100%;
+  }
+  textarea{min-height:74px;resize:vertical}
+  textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue)}
+  .outs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .out{min-height:34px;padding:0 12px;border-radius:17px;border:1.5px solid var(--line);background:var(--card);font-family:var(--sans);font-size:13px;color:var(--ink-2);cursor:pointer}
+  .out[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff;font-weight:500}
+  .out:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .minutes{margin-top:10px;border-left:2.5px solid var(--line);padding:2px 0 2px 11px;font-size:14.5px;color:var(--ink-2);white-space:pre-wrap}
+  .minutes.empty{color:var(--ink-3);font-style:italic}
+  .stamp{display:inline-block;margin-top:9px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:var(--green-wash);padding:3px 8px;border-radius:4px}
+
+  /* edit mode */
+  .ed-row{display:flex;gap:8px;margin-bottom:8px}
+  .ed-row .grow{flex:1 1 auto;min-width:0}
+  .ed-row .narrow{flex:0 0 78px}
+  .ed-lab{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:12px 0 5px}
+  .pt{border:1px solid var(--line);border-radius:10px;padding:9px;margin-bottom:8px;background:#FAFBFB}
+  .pt .ed-row:last-child{margin-bottom:0}
+  .senslab{display:flex;align-items:center;gap:8px;min-height:34px;font-size:13px;color:var(--ink-2);cursor:pointer;margin-bottom:8px}
+  .senslab input{width:18px;height:18px;accent-color:var(--sand);flex:none}
+  .mini{min-height:34px;padding:0 11px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;flex:none}
+  .mini:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .mini.del{color:var(--red);border-color:#EFDFDF}
+  .mini.add{color:var(--blue);border-color:var(--blue-wash);background:var(--blue-wash);width:100%;margin-top:2px}
+  .tools{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+  .budget{font-size:13px;font-weight:600;margin-top:12px;padding:9px 12px;border-radius:10px;text-align:center}
+  .budget.ok{background:var(--green-wash);color:var(--green)}
+  .budget.off{background:var(--sand-wash);color:var(--sand)}
+
+  details.fold{background:var(--card);border-radius:14px;margin-top:10px;box-shadow:0 1px 2px rgba(31,38,43,.05);overflow:hidden}
+  details.fold > summary{list-style:none;cursor:pointer;min-height:var(--tap);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:14px;font-weight:600}
+  details.fold > summary::-webkit-details-marker{display:none}
+  details.fold > summary span{font-size:13px;font-weight:500;color:var(--ink-3)}
+  details.fold > summary:focus-visible{outline:3px solid var(--sand);outline-offset:-3px}
+  .fold-in{padding:2px 14px 14px}
+  .rows{list-style:none;margin:0;padding:0}
+  .rows li{padding:9px 0;border-top:1px solid var(--line);font-size:14.5px;color:var(--ink)}
+  .rows li:first-child{border-top:0}
+  .rows .meta{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px}
+  .rows .due{color:var(--sand);font-weight:600}
+  .split{display:flex;justify-content:space-between;gap:12px}
+  .split .when{font-size:13px;color:var(--ink-2);flex:none}
+
+  .arc{list-style:none;margin:16px 0 0;padding:0}
+  .arc li{margin-bottom:9px}
+  .arc button{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 14px;cursor:pointer;font-family:var(--sans);display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:var(--tap)}
+  .arc button:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .arc .d{font-family:var(--serif);font-size:16.5px;font-weight:600;color:var(--ink)}
+  .arc .s{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px;font-weight:400}
+  .arc .chev{color:var(--ink-3);font-size:20px;flex:none}
+  .empty-state{text-align:center;color:var(--ink-3);font-size:14px;padding:34px 10px;line-height:1.6}
+
+  .actions{margin-top:16px;display:flex;flex-direction:column;gap:9px}
+  .btn{min-height:var(--tap);border-radius:11px;border:0;background:var(--blue);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;padding:0 16px;width:100%}
+  .btn.ghost{background:var(--card);color:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line)}
+  .btn.warn{background:var(--card);color:var(--sand);box-shadow:inset 0 0 0 1.5px var(--sand-wash)}
+  .btn:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .hint{font-size:12.5px;color:var(--ink-3);text-align:center;margin-top:7px;line-height:1.5}
+  .err{font-size:13px;color:var(--red);text-align:center;margin-top:8px;min-height:1em}
+  .saving{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));background:var(--ink);color:#fff;font-size:12.5px;font-weight:500;padding:8px 15px;border-radius:16px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
+  .saving.on{opacity:.93}
+  footer{text-align:center;font-size:12px;color:var(--ink-3);margin-top:24px;line-height:1.6}
+  footer .signout{background:none;border:0;padding:0;font:inherit;color:var(--blue);cursor:pointer;text-decoration:underline}
+  .sim{margin-top:16px;text-align:center}
+  .sim label{font-size:12px;color:var(--ink-3);display:block;margin-bottom:6px}
+  .sim input{width:100%;max-width:300px}
+  .login{max-width:360px;margin:30px auto 0}
+  .login h2{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0 0 12px;text-transform:none;color:var(--ink)}
+
+  @media (min-width:640px){.wrap{padding:0 20px 70px}.bar-in{padding:0 20px 10px}.bar h1{font-size:24px}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  @media print{
+    .tabs,.actions,.sim,.saving,.live,details.notes summary,footer .signout{display:none!important}
+    body{background:#fff}
+    .bar{position:static;background:#fff}
+    .item,.panel,details.fold{box-shadow:none;border:1px solid var(--line)}
+    details.notes,details.fold{open:true}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="bar-top">
+      <div>
+        <div class="eyebrow">Orting Ward</div>
+        <h1>Ward Council</h1>
+        <div class="date" id="hdrDate">&nbsp;</div>
+      </div>
+      <div class="state" id="stateChip"><span class="dot"></span><span id="stateTxt">Loading</span></div>
+    </div>
+    <div class="live" id="live">
+      <div class="live-row">
+        <div class="live-now" id="liveNow">&mdash;</div>
+        <div class="live-left" id="liveLeft"></div>
+      </div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+    <div class="tabs hidden" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-view="now" aria-selected="true">Meeting</button>
+      <button class="tab" role="tab" data-view="edit" aria-selected="false" id="editTab">Edit</button>
+      <button class="tab" role="tab" data-view="arc" aria-selected="false">Archive</button>
+      <button class="tab hidden" role="tab" data-view="people" aria-selected="false" id="peopleTab">People</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="app"><div class="empty-state">Loading&hellip;</div></div>
+<div class="saving" id="saving">Saved</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ api ============ */
+async function api(path, opts){
+  opts = opts || {};
+  var init = {
+    method: opts.method || "GET",
+    headers: {},
+    credentials: "same-origin"
+  };
+  if(opts.body !== undefined){
+    init.headers["Content-Type"] = "application/json";
+    init.body = JSON.stringify(opts.body);
+  }
+  if(opts.keepalive) init.keepalive = true;
+  var res = await fetch(path, init);
+  var data = null;
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok){
+    var err = new Error((data && data.error) || ("Request failed (" + res.status + ")"));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+/* ============ time ============ */
+var START_H = 7, START_M = 30, LEN = 60;
+var SIM = null;
+
+function pad(n){ return (n < 10 ? "0" : "") + n; }
+function isoOf(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+function dateOf(iso){ var p = iso.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+function fmtLong(iso){ return dateOf(iso).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}); }
+function clockAt(off){
+  var t = START_H*60 + START_M + off, h = Math.floor(t/60), m = t%60;
+  var ap = h >= 12 ? "p.m." : "a.m.", hh = (h % 12) === 0 ? 12 : h % 12;
+  return hh + ":" + pad(m) + " " + ap;
+}
+/* minutes since 7:30 on the meeting date, or null if not that day */
+function elapsed(iso){
+  if(SIM !== null) return SIM;
+  var now = new Date();
+  if(isoOf(now) !== iso) return null;
+  return (now.getHours()*60 + now.getMinutes() + now.getSeconds()/60) - (START_H*60 + START_M);
+}
+
+/* ============ state ============ */
+var STATE = { view:"now", user:null, meeting:null, index:[], viewing:null };
+var OUTS = ["Decided","Assigned","Deferred","Referred"];
+var TAGS = ["","Counsel","Decide","Coordinate"];
+var tickerStarted = false;
+
+function canEdit(){ return STATE.user && STATE.user.role === "bishopric"; }
+function mySections(){ return (STATE.user && STATE.user.sections) || []; }
+function ownsSec(name){
+  var n = String(name || "").trim().toLowerCase();
+  if(!n) return false;
+  return mySections().some(function(s){ return String(s).trim().toLowerCase() === n; });
+}
+function canOpenEdit(){ return canEdit() || mySections().length > 0; }
+
+async function boot(){
+  try{
+    var bs = await api("/api/bootstrap");
+    STATE.user = bs.user;
+    STATE.meeting = bs.meeting;
+    STATE.index = bs.index;
+    STATE.view = "now";
+    STATE.viewing = null;
+    document.getElementById("tabs").classList.remove("hidden");
+    document.getElementById("editTab").classList.toggle("hidden", !canOpenEdit());
+    document.getElementById("peopleTab").classList.toggle("hidden", !canEdit());
+    render();
+    if(!tickerStarted){ setInterval(tickLive, 1000); tickerStarted = true; }
+  }catch(e){
+    if(e.status === 401){ renderLogin(); return; }
+    console.error(e);
+    document.getElementById("app").innerHTML =
+      '<div class="empty-state">Something went wrong loading this meeting.<br>' + esc(e.message) + '<br>Pull to refresh or reload the page.</div>';
+  }
+}
+
+/* ============ login ============ */
+function renderLogin(msg){
+  STATE.user = null; STATE.meeting = null;
+  document.getElementById("tabs").classList.add("hidden");
+  document.getElementById("hdrDate").textContent = "Sign in to continue";
+  var chip = document.getElementById("stateChip");
+  chip.className = "state";
+  document.getElementById("stateTxt").textContent = "Signed out";
+  document.getElementById("live").classList.remove("on","over");
+
+  var app = el("app");
+  app.innerHTML =
+    '<section class="panel login"><h2>Sign in</h2>' +
+    '<form id="loginForm">' +
+    '<div class="ed-row"><input type="text" id="lu" class="grow" placeholder="Username" autocomplete="username" autocapitalize="none" autocorrect="off"></div>' +
+    '<div class="ed-row"><input type="password" id="lp" class="grow" placeholder="Password" autocomplete="current-password"></div>' +
+    '<button class="btn" type="submit">Sign in</button>' +
+    '<div class="err" id="loginErr">' + (msg ? esc(msg) : '') + '</div>' +
+    '</form></section>' +
+    '<footer>Structured on General Handbook 4.4.</footer>';
+
+  document.getElementById("loginForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var errEl = document.getElementById("loginErr");
+    errEl.textContent = "";
+    try{
+      await api("/api/login", { method:"POST", body:{
+        username: document.getElementById("lu").value,
+        password: document.getElementById("lp").value
+      }});
+      await boot();
+    }catch(err){
+      errEl.textContent = err.message;
+    }
+  });
+  document.getElementById("lu").focus();
+}
+
+async function logout(){
+  try{ await api("/api/logout", { method:"POST" }); }catch(e){}
+  renderLogin();
+}
+
+/* ============ saving ============ */
+var saveTimer = null, dirty = false;
+function queueSave(){
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){ flushSave(false); }, 600);
+}
+async function flushSave(keepalive){
+  var m = STATE.meeting;
+  if(!dirty || !m || m.status === "closed") return;
+  dirty = false;
+  try{
+    await api("/api/meetings/" + m.date, { method:"PUT", body:m, keepalive: !!keepalive });
+    toast("Saved");
+  }catch(e){
+    if(e.status === 401){ renderLogin("Your session expired - sign in again"); return; }
+    dirty = true;
+    toast(e.status === 409 ? "This meeting is archived" : "Could not save - will retry");
+  }
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "hidden"){ clearTimeout(saveTimer); flushSave(true); }
+});
+function toast(msg){
+  var t = document.getElementById("saving");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h);
+  t._h = setTimeout(function(){ t.classList.remove("on"); }, 1500);
+}
+
+async function closeMeeting(){
+  var m = STATE.meeting;
+  if(!m || m.status === "closed") return;
+  if(!window.confirm("Close this meeting and archive it? The record freezes as it stands, and next Sunday is seeded with anything deferred.")) return;
+  clearTimeout(saveTimer);
+  try{
+    if(dirty){ dirty = false; await api("/api/meetings/" + m.date, { method:"PUT", body:m }); }
+    var r = await api("/api/meetings/" + m.date + "/close", { method:"POST" });
+    STATE.meeting = r.meeting;
+    STATE.index = r.index;
+    render();
+    toast("Archived. Next Sunday seeded.");
+  }catch(e){
+    if(e.status === 401){ renderLogin("Your session expired - sign in again"); return; }
+    toast(e.message);
+  }
+}
+
+/* ============ live ticker ============ */
+function tickLive(){
+  var live = document.getElementById("live");
+  var chip = document.getElementById("stateChip");
+  var txt  = document.getElementById("stateTxt");
+  var m = STATE.meeting;
+  if(!m || !STATE.user) return;
+
+  var showLive = (STATE.view === "now" && m.status !== "closed");
+  if(!showLive){
+    live.classList.remove("on","over");
+    chip.className = "state" + (m.status === "closed" ? " closed" : "");
+    txt.textContent = STATE.view === "arc" ? "Records"
+                     : STATE.view === "edit" ? "Editing"
+                     : STATE.view === "people" ? "Admin"
+                     : (m.status === "closed" ? "Archived" : "Draft");
+    return;
+  }
+
+  var e = elapsed(m.date);
+  if(e === null || e < 0 || e > LEN){
+    chip.className = "state";
+    txt.textContent = (e !== null && e > LEN) ? "Ended" : "Upcoming";
+    live.classList.remove("on","over");
+    var items0 = document.querySelectorAll(".item");
+    for(var i=0;i<items0.length;i++) items0[i].classList.remove("is-now","is-done");
+    var st0 = document.querySelector(".stack");
+    if(st0) st0.style.setProperty("--prog","0px");
+    return;
+  }
+
+  chip.className = "state live";
+  txt.textContent = "Live";
+  live.classList.add("on");
+
+  var off = 0, cur = null, curOff = 0;
+  m.blocks.forEach(function(b){
+    var elB = document.querySelector('.item[data-id="' + b.id + '"]');
+    if(elB) elB.classList.remove("is-now","is-done");
+    if(e >= off + b.dur){ if(elB) elB.classList.add("is-done"); }
+    else if(e >= off && !cur){ if(elB) elB.classList.add("is-now"); cur = b; curOff = off; }
+    off += b.dur;
+  });
+  if(!cur){ cur = m.blocks[0]; curOff = 0; }
+
+  var rem = Math.ceil(curOff + cur.dur - e);
+  document.getElementById("liveNow").textContent = cur.title;
+  document.getElementById("liveLeft").textContent = rem >= 0 ? rem + " min left" : Math.abs(rem) + " min over";
+  live.classList.toggle("over", rem < 0);
+  var pct = Math.min(100, Math.max(0, (e / LEN) * 100));
+  document.getElementById("fill").style.width = pct + "%";
+  var st = document.querySelector(".stack");
+  if(st) st.style.setProperty("--prog", pct + "%");
+}
+
+/* ============ helpers ============ */
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function totalMins(m){ return m.blocks.reduce(function(a,b){ return a + (+b.dur || 0); }, 0); }
+function el(id){ return document.getElementById(id); }
+function on(node, sel, ev, fn){
+  node.addEventListener(ev, function(e){
+    var t = e.target.closest(sel);
+    if(t && node.contains(t)) fn(t, e);
+  });
+}
+function footerHTML(){
+  var u = STATE.user;
+  return '<footer>Structured on General Handbook 4.4.<br>Items close Wednesday 9&nbsp;p.m.<br>' +
+    (u ? 'Signed in as ' + esc(u.displayName) + ' &middot; <button class="signout" id="signoutBtn">Sign out</button>' : '') +
+    '</footer>';
+}
+function wireFooter(){
+  var b = el("signoutBtn");
+  if(b) b.addEventListener("click", logout);
+}
+
+/* ============ render: meeting ============ */
+function blockHTML(b, off, ro){
+  var h = '<article class="item" data-id="' + esc(b.id) + '">';
+  h += '<div class="top"><span class="time">' + clockAt(off) + '</span><h3>' + esc(b.title) + '</h3><span class="mins">' + (+b.dur) + 'm</span></div>';
+  if(b.tag) h += '<div class="chiprow"><span class="chip">' + esc(b.tag) + '</span></div>';
+  if(b.lead) h += '<p class="lead">' + esc(b.lead) + '</p>';
+
+  var pts = (b.points || []);
+  var redd    = pts.filter(function(p){ return p.redacted; });
+  var bullets = pts.filter(function(p){ return !p.redacted && !p.h; });
+  var subs    = pts.filter(function(p){ return !p.redacted && !!p.h; });
+
+  if(bullets.length){
+    h += '<ul class="list">' + bullets.map(function(p){
+      return '<li>' + esc(p.p) + (p.sens ? ' <span class="chip carry">Held</span>' : '') + '</li>';
+    }).join("") + '</ul>';
+  }
+  subs.forEach(function(p){
+    h += '<div class="sub"><h4>' + esc(p.h);
+    if(p.tag) h += ' <span class="chip' + (p.carry ? ' carry' : '') + '">' + esc(p.tag) + '</span>';
+    if(p.sens) h += ' <span class="chip carry">Held</span>';
+    h += '</h4>' + (p.p ? '<p>' + esc(p.p) + '</p>' : '') + '</div>';
+  });
+  if(redd.length){
+    h += '<div class="held">' + redd.length + (redd.length === 1 ? ' item is' : ' items are') + ' held for the bishopric</div>';
+  }
+  if(b.held) h += '<div class="held">' + esc(b.held) + '</div>';
+
+  if(ro){
+    if(b.notes) h += '<div class="minutes">' + esc(b.notes) + '</div>';
+    else if(b.ph !== "") h += '<div class="minutes empty">No minutes recorded</div>';
+    if(b.outcome) h += '<span class="stamp">' + esc(b.outcome) + '</span>';
+  } else if(b.ph !== ""){
+    h += '<details class="notes"' + (b.notes ? ' open' : '') + '><summary>Notes</summary>';
+    h += '<textarea data-note="' + esc(b.id) + '" placeholder="' + esc(b.ph) + '">' + esc(b.notes) + '</textarea>';
+    h += '<div class="outs">' + OUTS.map(function(o){
+      return '<button class="out" data-outblock="' + esc(b.id) + '" data-out="' + esc(o) + '" aria-pressed="' + (b.outcome === o) + '">' + o + '</button>';
+    }).join("") + '</div></details>';
+  }
+  return h + '</article>';
+}
+
+function renderMeeting(m, ro){
+  var app = el("app");
+  var present = m.roster.filter(function(n){ return m.attendance[n]; }).length;
+  var h = "";
+
+  if(ro){
+    h += '<div class="banner arch"><b>Archived record</b>Minutes for ' + fmtLong(m.date) +
+         '. This copy is frozen. Later changes to the roster or agenda will not alter it.</div>';
+  }
+
+  h += '<section class="panel"><h2>Attending</h2><div class="pills" id="pills">';
+  h += m.roster.map(function(n){
+    return '<button class="pill" data-name="' + esc(n) + '" aria-pressed="' + (!!m.attendance[n]) + '"' + (ro ? " disabled" : "") + '>' + esc(n) + '</button>';
+  }).join("");
+  h += '</div><div class="count" id="cnt">' + present + ' of ' + m.roster.length + ' present</div></section>';
+
+  var off = 0;
+  h += '<div class="stack">' + m.blocks.map(function(b){ var s = blockHTML(b, off, ro); off += (+b.dur || 0); return s; }).join("") + '</div>';
+
+  h += foldHTML("Open assignments", m.assignments.length,
+    m.assignments.map(function(a){ return '<li>' + esc(a.t) + '<span class="meta">' + esc(a.o) + ' &middot; <span class="due">' + esc(a.d) + '</span></span></li>'; }).join(""), true);
+  h += foldHTML("Away - next 30 days", m.away.length,
+    m.away.map(function(a){ return '<li class="split"><span>' + esc(a.n) + '</span><span class="when">' + esc(a.w) + '</span></li>'; }).join(""), false);
+  h += foldHTML("Calendar", m.calendar.length,
+    m.calendar.map(function(a){ return '<li class="split"><span>' + esc(a.n) + '</span><span class="when">' + esc(a.w) + '</span></li>'; }).join(""), false);
+
+  if(!ro){
+    if(canEdit()){
+      h += '<div class="actions"><button class="btn" id="closeBtn">Close meeting and archive</button></div>';
+      h += '<div class="hint">Freezes this week as minutes and seeds next Sunday with anything deferred.</div>';
+    }
+    h += '<div class="sim"><label for="sim">Preview the hour</label><input type="range" id="sim" min="-1" max="61" value="' + (SIM === null ? -1 : SIM) + '"></div>';
+  }
+  h += footerHTML();
+  app.innerHTML = h;
+
+  if(!ro) wireMeeting();
+  wireFooter();
+}
+
+function foldHTML(title, n, inner, open){
+  return '<details class="fold"' + (open ? ' open' : '') + '><summary>' + title + ' <span>' + n + '</span></summary>' +
+         '<div class="fold-in"><ul class="rows">' + (inner || '<li>Nothing listed</li>') + '</ul></div></details>';
+}
+
+function wireMeeting(){
+  var app = el("app");
+
+  on(app, "[data-note]", "input", function(t){
+    var b = find(STATE.meeting.blocks, t.getAttribute("data-note"));
+    if(b){ b.notes = t.value; queueSave(); }
+  });
+  on(app, ".out", "click", function(t){
+    var b = find(STATE.meeting.blocks, t.getAttribute("data-outblock"));
+    if(!b) return;
+    var v = t.getAttribute("data-out");
+    b.outcome = (b.outcome === v) ? "" : v;
+    var sibs = t.parentNode.querySelectorAll(".out");
+    for(var i=0;i<sibs.length;i++) sibs[i].setAttribute("aria-pressed", String(b.outcome === sibs[i].getAttribute("data-out")));
+    queueSave();
+  });
+  on(app, ".pill", "click", function(t){
+    var n = t.getAttribute("data-name");
+    var m = STATE.meeting;
+    m.attendance[n] = !m.attendance[n];
+    t.setAttribute("aria-pressed", String(!!m.attendance[n]));
+    var p = m.roster.filter(function(x){ return m.attendance[x]; }).length;
+    el("cnt").textContent = p + " of " + m.roster.length + " present";
+    queueSave();
+  });
+  var cb = el("closeBtn"); if(cb) cb.addEventListener("click", closeMeeting);
+  var sim = el("sim");
+  if(sim) sim.addEventListener("input", function(){ SIM = (+sim.value < 0) ? null : +sim.value; tickLive(); });
+}
+
+function find(arr, id){ for(var i=0;i<arr.length;i++){ if(arr[i].id === id) return arr[i]; } return null; }
+function idxOf(arr, id){ for(var i=0;i<arr.length;i++){ if(arr[i].id === id) return i; } return -1; }
+
+/* ============ render: edit ============ */
+function renderEdit(){
+  var m = STATE.meeting, app = el("app");
+  if(m.status === "closed"){
+    app.innerHTML = '<div class="banner arch"><b>Archived</b>This week is closed and cannot be edited. Records stay as they were.</div>' + footerHTML();
+    wireFooter();
+    return;
+  }
+  if(!canEdit()){ renderSectionEdit(); return; }
+  var total = totalMins(m);
+  var h = '<div class="banner edit">Changes save as you type. What you set here is what the meeting runs on.</div>';
+
+  h += '<div class="budget ' + (total === LEN ? "ok" : "off") + '">' + total + ' of ' + LEN + ' minutes' +
+       (total === LEN ? '' : (total > LEN ? ' &middot; ' + (total-LEN) + ' over' : ' &middot; ' + (LEN-total) + ' to fill')) + '</div>';
+
+  /* roster */
+  h += '<section class="panel"><h2>Council roster</h2><div class="pills">';
+  h += m.roster.map(function(n){
+    return '<span class="pill static">' + esc(n) + '<span class="x" data-delperson="' + esc(n) + '" role="button" tabindex="0" aria-label="Remove ' + esc(n) + '">&times;</span></span>';
+  }).join("");
+  h += '</div><div class="ed-row" style="margin-top:10px"><input type="text" class="grow" id="newPerson" placeholder="Add a name"><button class="mini" id="addPerson">Add</button></div></section>';
+
+  /* blocks */
+  h += '<div class="ed-lab">Agenda</div><div class="stack plain">';
+  m.blocks.forEach(function(b, i){
+    h += '<article class="item">';
+    h += '<div class="ed-row"><input type="text" class="grow" data-f="title" data-b="' + esc(b.id) + '" value="' + esc(b.title) + '" placeholder="Item title">';
+    h += '<input type="number" class="narrow" data-f="dur" data-b="' + esc(b.id) + '" value="' + (+b.dur) + '" min="0" max="60" aria-label="Minutes"></div>';
+    h += '<div class="ed-row"><select class="grow" data-f="tag" data-b="' + esc(b.id) + '">' +
+         TAGS.map(function(t){ return '<option value="' + esc(t) + '"' + (b.tag === t ? " selected" : "") + '>' + (t || "No purpose tag") + '</option>'; }).join("") +
+         '</select></div>';
+    h += '<div class="ed-row"><input type="text" class="grow" data-f="lead" data-b="' + esc(b.id) + '" value="' + esc(b.lead) + '" placeholder="Short description (optional)"></div>';
+
+    (b.points || []).forEach(function(p){
+      h += '<div class="pt">';
+      h += '<div class="ed-row"><input type="text" class="grow" data-pf="h" data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '" value="' + esc(p.h) + '" placeholder="Heading (leave blank for a bullet)"></div>';
+      h += '<div class="ed-row"><input type="text" class="grow" data-pf="p" data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '" value="' + esc(p.p) + '" placeholder="Detail"></div>';
+      h += '<div class="ed-row"><input type="text" class="grow" data-pf="tag" data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '" value="' + esc(p.tag) + '" placeholder="Tag (optional)">';
+      h += '<button class="mini del" data-delpoint="' + esc(p.id) + '" data-b="' + esc(b.id) + '">Remove</button></div>';
+      h += '<label class="senslab"><input type="checkbox" data-psens data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '"' + (p.sens ? ' checked' : '') + '> Sensitive - only the bishopric sees this point</label>';
+      h += '</div>';
+    });
+    h += '<button class="mini add" data-addpoint="' + esc(b.id) + '">+ Add point</button>';
+
+    h += '<div class="ed-row" style="margin-top:10px"><input type="text" class="grow" data-f="held" data-b="' + esc(b.id) + '" value="' + esc(b.held) + '" placeholder="Confidential placeholder (optional)"></div>';
+    h += '<div class="tools">';
+    h += '<button class="mini" data-move="up" data-b="' + esc(b.id) + '"' + (i === 0 ? " disabled" : "") + '>Move up</button>';
+    h += '<button class="mini" data-move="down" data-b="' + esc(b.id) + '"' + (i === m.blocks.length-1 ? " disabled" : "") + '>Move down</button>';
+    h += '<button class="mini del" data-delblock="' + esc(b.id) + '">Delete item</button>';
+    h += '</div></article>';
+  });
+  h += '</div><button class="mini add" id="addBlock">+ Add agenda item</button>';
+
+  /* lists */
+  h += listEditor("Open assignments", "assignments", m.assignments, ["t","o","d"], ["What","Who","When"]);
+  h += listEditor("Away", "away", m.away, ["n","w"], ["Who","When"]);
+  h += listEditor("Calendar", "calendar", m.calendar, ["n","w"], ["What","When"]);
+
+  h += '<div class="actions"><button class="btn ghost" id="backBtn">Back to the meeting</button></div>';
+  h += footerHTML();
+
+  app.innerHTML = h;
+  wireEdit();
+  wireFooter();
+}
+
+/* ============ render: people (admin page, full access only) ============ */
+function renderPeopleView(){
+  var app = el("app");
+  app.innerHTML =
+    '<div class="banner edit">Add council members, set what they can do, and give organization leaders their sections.</div>' +
+    '<section class="panel" id="peoplePanel"><div class="hint" style="text-align:left;margin:0">Loading people&hellip;</div></section>' +
+    footerHTML();
+  wireFooter();
+  loadPeople();
+}
+
+/* Section owners: edit only the agenda content inside their sections.
+   The server enforces the same boundary on save. */
+function renderSectionEdit(){
+  var m = STATE.meeting, app = el("app");
+  var secs = mySections();
+  var h = '<div class="banner edit">You can update your section' + (secs.length > 1 ? 's' : '') + ': ' +
+          secs.map(esc).join(', ') + '. Changes save as you type.</div>';
+
+  var blocksHtml = '', any = false;
+  m.blocks.forEach(function(b){
+    var owns = ownsSec(b.title);
+    var pts = (b.points || []).filter(function(p){ return !p.redacted; });
+    var mine = owns ? pts : pts.filter(function(p){ return ownsSec(p.h); });
+    if(!owns && !mine.length) return;
+    any = true;
+
+    blocksHtml += '<article class="item"><div class="top"><h3>' + esc(b.title) + '</h3></div>';
+    if(owns){
+      blocksHtml += '<div class="ed-row" style="margin-top:9px"><input type="text" class="grow" data-f="lead" data-b="' + esc(b.id) + '" value="' + esc(b.lead) + '" placeholder="Short description (optional)"></div>';
+    }
+    mine.forEach(function(p){
+      blocksHtml += '<div class="pt">';
+      if(owns){
+        blocksHtml += '<div class="ed-row"><input type="text" class="grow" data-pf="h" data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '" value="' + esc(p.h) + '" placeholder="Heading (leave blank for a bullet)"></div>';
+      } else {
+        blocksHtml += '<div class="ed-lab" style="margin:0 0 5px">' + esc(p.h) + '</div>';
+      }
+      blocksHtml += '<div class="ed-row"><input type="text" class="grow" data-pf="p" data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '" value="' + esc(p.p) + '" placeholder="Detail"></div>';
+      blocksHtml += '<div class="ed-row"><input type="text" class="grow" data-pf="tag" data-b="' + esc(b.id) + '" data-p="' + esc(p.id) + '" value="' + esc(p.tag) + '" placeholder="Tag (optional)">';
+      blocksHtml += '<button class="mini del" data-delpoint="' + esc(p.id) + '" data-b="' + esc(b.id) + '">Remove</button></div>';
+      blocksHtml += '</div>';
+    });
+    if(owns){
+      blocksHtml += '<button class="mini add" data-addpoint="' + esc(b.id) + '">+ Add point</button>';
+      blocksHtml += '<div class="ed-row" style="margin-top:10px"><input type="text" class="grow" data-f="held" data-b="' + esc(b.id) + '" value="' + esc(b.held) + '" placeholder="Confidential placeholder (optional)"></div>';
+    } else {
+      var present = {};
+      mine.forEach(function(p){ present[String(p.h).trim().toLowerCase()] = p.h; });
+      Object.keys(present).forEach(function(k){
+        blocksHtml += '<button class="mini add" data-addpoint="' + esc(b.id) + '" data-addhead="' + esc(present[k]) + '">+ Add ' + esc(present[k]) + ' point</button>';
+      });
+    }
+    blocksHtml += '</article>';
+  });
+
+  if(any) h += '<div class="stack plain" style="margin-top:14px">' + blocksHtml + '</div>';
+  else h += '<div class="empty-state">None of your sections appear on this week\'s agenda yet.<br>Ask the agenda owner to add them.</div>';
+
+  h += '<div class="actions"><button class="btn ghost" id="backBtn">Back to the meeting</button></div>';
+  h += footerHTML();
+  app.innerHTML = h;
+  wireSectionEdit();
+  wireFooter();
+}
+
+function wireSectionEdit(){
+  var app = el("app"), m = STATE.meeting;
+
+  on(app, "[data-f]", "input", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    b[t.getAttribute("data-f")] = t.value;
+    queueSave();
+  });
+  on(app, "[data-pf]", "input", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    var p = find(b.points, t.getAttribute("data-p")); if(!p) return;
+    p[t.getAttribute("data-pf")] = t.value;
+    if(t.getAttribute("data-pf") === "tag") p.carry = /carr/i.test(t.value);
+    queueSave();
+  });
+  on(app, "[data-delpoint]", "click", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    var i = idxOf(b.points, t.getAttribute("data-delpoint"));
+    if(i > -1) b.points.splice(i,1);
+    queueSave(); renderSectionEdit();
+  });
+  on(app, "[data-addpoint]", "click", function(t){
+    var b = find(m.blocks, t.getAttribute("data-addpoint")); if(!b) return;
+    b.points.push({id:uid(), h:t.getAttribute("data-addhead") || "", p:"", tag:"", carry:false, sens:false});
+    queueSave(); renderSectionEdit();
+  });
+  var bb = el("backBtn"); if(bb) bb.addEventListener("click", function(){ setView("now"); });
+}
+
+/* ============ people admin (full access) ============ */
+async function loadPeople(){
+  var panel = el("peoplePanel"); if(!panel) return;
+  try{
+    var r = await api("/api/users");
+    renderPeople(panel, r.users);
+  }catch(e){
+    panel.innerHTML = '<div class="hint" style="text-align:left;margin:0">Could not load people: ' + esc(e.message) + '</div>';
+  }
+}
+
+function renderPeople(panel, users){
+  var h = '';
+  users.forEach(function(u){
+    var self = STATE.user && u.username === STATE.user.username;
+    h += '<div class="pt" data-user="' + esc(u.username) + '">';
+    h += '<div class="ed-row"><input type="text" class="grow" data-uf="displayName" value="' + esc(u.displayName) + '" placeholder="Display name">';
+    h += '<select data-uf="role" style="flex:0 0 128px"' + (self ? ' disabled' : '') + '>' +
+         '<option value="bishopric"' + (u.role === 'bishopric' ? ' selected' : '') + '>Full access</option>' +
+         '<option value="council"' + (u.role === 'council' ? ' selected' : '') + '>Council</option></select></div>';
+    h += '<div class="ed-row"><input type="text" class="grow" data-uf="sections" value="' + esc(u.sections.join(', ')) + '" placeholder="Their sections, comma separated (e.g. Primary)"' + (u.role === 'bishopric' ? ' disabled' : '') + '></div>';
+    h += '<div class="ed-row"><button class="mini" data-upw="' + esc(u.username) + '">Set password</button>' +
+         (self ? '' : '<button class="mini del" data-udel="' + esc(u.username) + '">Remove</button>') +
+         '<span class="hint" style="margin:0;align-self:center;text-align:left">@' + esc(u.username) +
+         (u.role === 'council' && !u.sections.length ? ' &middot; capture only' : '') + '</span></div>';
+    h += '</div>';
+  });
+  h += '<div class="ed-lab" style="margin-top:14px">Add a person</div>';
+  h += '<div class="ed-row"><input type="text" class="grow" id="nuU" placeholder="username" autocapitalize="none" autocorrect="off"><input type="text" class="grow" id="nuN" placeholder="Display name"></div>';
+  h += '<div class="ed-row"><input type="text" class="grow" id="nuP" placeholder="Password (6+ characters)"><select id="nuR" class="grow"><option value="council">Council</option><option value="bishopric">Full access</option></select></div>';
+  h += '<div class="ed-row"><input type="text" class="grow" id="nuS" placeholder="Sections, comma separated (optional)"></div>';
+  h += '<button class="mini add" id="nuAdd">+ Add person</button>';
+  h += '<div class="hint" style="text-align:left">Full access (bishopric, exec sec, ward clerk) edits everything and sees held items. Council members edit only the sections listed for them &mdash; a section matches an agenda item title or a point heading, like &ldquo;Primary&rdquo; or &ldquo;Sunday School&rdquo;. With no sections they can still take attendance and notes.</div>';
+  panel.innerHTML = h;
+  wirePeople(panel);
+}
+
+function splitSections(v){
+  return String(v || "").split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+}
+
+function wirePeople(panel){
+  on(panel, "[data-uf]", "change", async function(t){
+    var wrap = t.closest("[data-user]"); if(!wrap) return;
+    var username = wrap.getAttribute("data-user");
+    var f = t.getAttribute("data-uf");
+    var body = {};
+    if(f === "sections") body.sections = splitSections(t.value);
+    else body[f] = t.value;
+    try{
+      await api("/api/users/" + encodeURIComponent(username), { method:"PUT", body:body });
+      toast("Saved");
+      if(f === "role") loadPeople();
+    }catch(e){ toast(e.message); loadPeople(); }
+  });
+  on(panel, "[data-upw]", "click", async function(t){
+    var username = t.getAttribute("data-upw");
+    var pw = window.prompt("New password for @" + username + " (6+ characters)");
+    if(!pw) return;
+    try{
+      await api("/api/users/" + encodeURIComponent(username), { method:"PUT", body:{ password: pw } });
+      toast("Password set");
+    }catch(e){ toast(e.message); }
+  });
+  on(panel, "[data-udel]", "click", async function(t){
+    var username = t.getAttribute("data-udel");
+    if(!window.confirm("Remove @" + username + "? They will no longer be able to sign in.")) return;
+    try{
+      await api("/api/users/" + encodeURIComponent(username), { method:"DELETE" });
+      toast("Removed"); loadPeople();
+    }catch(e){ toast(e.message); }
+  });
+  var add = el("nuAdd");
+  if(add) add.addEventListener("click", async function(){
+    try{
+      await api("/api/users", { method:"POST", body:{
+        username: el("nuU").value,
+        displayName: el("nuN").value,
+        password: el("nuP").value,
+        role: el("nuR").value,
+        sections: splitSections(el("nuS").value)
+      }});
+      toast("Added"); loadPeople();
+    }catch(e){ toast(e.message); }
+  });
+}
+
+function listEditor(title, key, rows, fields, labels){
+  var h = '<div class="ed-lab">' + title + '</div><section class="panel">';
+  rows.forEach(function(r){
+    h += '<div class="pt">';
+    fields.forEach(function(f, i){
+      h += '<div class="ed-row"><input type="text" class="grow" data-lf="' + f + '" data-lk="' + key + '" data-l="' + esc(r.id) + '" value="' + esc(r[f]) + '" placeholder="' + esc(labels[i]) + '"></div>';
+    });
+    h += '<div class="ed-row"><button class="mini del" data-dellist="' + esc(r.id) + '" data-lk="' + key + '">Remove</button></div></div>';
+  });
+  if(!rows.length) h += '<div class="hint" style="margin:0 0 8px">Nothing listed yet.</div>';
+  h += '<button class="mini add" data-addlist="' + key + '">+ Add</button></section>';
+  return h;
+}
+
+function wireEdit(){
+  var app = el("app"), m = STATE.meeting;
+
+  on(app, "[data-f]", "input", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    var f = t.getAttribute("data-f");
+    b[f] = (f === "dur") ? Math.max(0, Math.min(60, +t.value || 0)) : t.value;
+    queueSave();
+    if(f === "dur") refreshBudget();
+  });
+  on(app, "[data-f='tag']", "change", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    b.tag = t.value; queueSave();
+  });
+  on(app, "[data-pf]", "input", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    var p = find(b.points, t.getAttribute("data-p")); if(!p) return;
+    p[t.getAttribute("data-pf")] = t.value;
+    if(t.getAttribute("data-pf") === "tag") p.carry = /carr/i.test(t.value);
+    queueSave();
+  });
+  on(app, "[data-psens]", "change", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    var p = find(b.points, t.getAttribute("data-p")); if(!p) return;
+    p.sens = !!t.checked;
+    queueSave();
+  });
+  on(app, "[data-addpoint]", "click", function(t){
+    var b = find(m.blocks, t.getAttribute("data-addpoint")); if(!b) return;
+    b.points.push({id:uid(), h:"", p:"", tag:"", carry:false, sens:false});
+    queueSave(); renderEdit();
+  });
+  on(app, "[data-delpoint]", "click", function(t){
+    var b = find(m.blocks, t.getAttribute("data-b")); if(!b) return;
+    var i = idxOf(b.points, t.getAttribute("data-delpoint"));
+    if(i > -1) b.points.splice(i,1);
+    queueSave(); renderEdit();
+  });
+  on(app, "[data-move]", "click", function(t){
+    var i = idxOf(m.blocks, t.getAttribute("data-b"));
+    var j = t.getAttribute("data-move") === "up" ? i-1 : i+1;
+    if(i < 0 || j < 0 || j >= m.blocks.length) return;
+    var tmp = m.blocks[i]; m.blocks[i] = m.blocks[j]; m.blocks[j] = tmp;
+    queueSave(); renderEdit();
+  });
+  on(app, "[data-delblock]", "click", function(t){
+    var i = idxOf(m.blocks, t.getAttribute("data-delblock"));
+    if(i > -1) m.blocks.splice(i,1);
+    queueSave(); renderEdit();
+  });
+  var ab = el("addBlock");
+  if(ab) ab.addEventListener("click", function(){
+    m.blocks.push({id:uid(), title:"New item", dur:5, tag:"", lead:"", points:[], held:"", notes:"", outcome:"", ph:"Notes..."});
+    queueSave(); renderEdit();
+  });
+
+  /* roster */
+  on(app, "[data-delperson]", "click", function(t){
+    var n = t.getAttribute("data-delperson");
+    m.roster = m.roster.filter(function(x){ return x !== n; });
+    delete m.attendance[n];
+    queueSave(); renderEdit();
+  });
+  var addP = el("addPerson");
+  if(addP) addP.addEventListener("click", function(){
+    var v = (el("newPerson").value || "").trim();
+    if(!v) return;
+    if(m.roster.indexOf(v) === -1) m.roster.push(v);
+    queueSave(); renderEdit();
+  });
+  var np = el("newPerson");
+  if(np) np.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); addP.click(); } });
+
+  /* lists */
+  on(app, "[data-lf]", "input", function(t){
+    var arr = m[t.getAttribute("data-lk")]; if(!arr) return;
+    var r = find(arr, t.getAttribute("data-l")); if(!r) return;
+    r[t.getAttribute("data-lf")] = t.value; queueSave();
+  });
+  on(app, "[data-dellist]", "click", function(t){
+    var k = t.getAttribute("data-lk"), arr = m[k]; if(!arr) return;
+    var i = idxOf(arr, t.getAttribute("data-dellist"));
+    if(i > -1) arr.splice(i,1);
+    queueSave(); renderEdit();
+  });
+  on(app, "[data-addlist]", "click", function(t){
+    var k = t.getAttribute("data-addlist");
+    if(k === "assignments") m.assignments.push({id:uid(), t:"", o:"", d:""});
+    else m[k].push({id:uid(), n:"", w:""});
+    queueSave(); renderEdit();
+  });
+
+  var bb = el("backBtn"); if(bb) bb.addEventListener("click", function(){ setView("now"); });
+}
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+function refreshBudget(){
+  var b = document.querySelector(".budget");
+  if(!b) return;
+  var total = totalMins(STATE.meeting);
+  b.className = "budget " + (total === LEN ? "ok" : "off");
+  b.innerHTML = total + " of " + LEN + " minutes" +
+    (total === LEN ? "" : (total > LEN ? " &middot; " + (total-LEN) + " over" : " &middot; " + (LEN-total) + " to fill"));
+}
+
+/* ============ render: archive ============ */
+function renderArchive(){
+  var app = el("app");
+  if(STATE.viewing){
+    renderMeeting(STATE.viewing, true);
+    var back = document.createElement("button");
+    back.className = "btn ghost"; back.textContent = "Back to records";
+    back.style.marginTop = "16px";
+    back.addEventListener("click", function(){ STATE.viewing = null; renderArchive(); window.scrollTo(0,0); });
+    app.appendChild(back);
+    return;
+  }
+  var closed = STATE.index.filter(function(e){ return e.status === "closed"; })
+                          .sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  if(!closed.length){
+    app.innerHTML = '<div class="empty-state">No archived meetings yet.<br>Close a meeting and its minutes appear here.</div>' + footerHTML();
+    wireFooter();
+    return;
+  }
+  app.innerHTML = '<ul class="arc">' + closed.map(function(e){
+    return '<li><button data-open="' + esc(e.date) + '"><span><span class="d">' + fmtLong(e.date) +
+           '</span><span class="s">Minutes</span></span><span class="chev">&rsaquo;</span></button></li>';
+  }).join("") + '</ul>' + footerHTML();
+  wireFooter();
+
+  on(app, "[data-open]", "click", async function(t){
+    try{
+      var r = await api("/api/meetings/" + t.getAttribute("data-open") + "/snapshot");
+      STATE.viewing = r.meeting;
+      renderArchive();
+      window.scrollTo(0,0);
+    }catch(e){
+      if(e.status === 401){ renderLogin("Your session expired - sign in again"); return; }
+      toast("Could not load that record");
+    }
+  });
+}
+
+/* ============ shell ============ */
+function setView(v){
+  if(v === "edit" && !canOpenEdit()) v = "now";
+  if(v === "people" && !canEdit()) v = "now";
+  STATE.view = v;
+  if(v !== "arc") STATE.viewing = null;
+  render();
+  window.scrollTo(0,0);
+}
+function render(){
+  var tabs = document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++) tabs[i].setAttribute("aria-selected", String(tabs[i].getAttribute("data-view") === STATE.view));
+  var m = STATE.meeting;
+  if(!m) return;
+  if(STATE.view === "people"){
+    el("hdrDate").textContent = "People and access";
+    renderPeopleView();
+  } else if(STATE.view === "arc"){
+    el("hdrDate").textContent = "Past minutes";
+    renderArchive();
+  } else {
+    el("hdrDate").textContent = fmtLong(m.date) + " · 7:30–8:30 a.m.";
+    if(STATE.view === "edit") renderEdit();
+    else renderMeeting(m, m.status === "closed");
+  }
+  tickLive();
+}
+var tabsEl = document.querySelectorAll(".tab");
+for(var i=0;i<tabsEl.length;i++){
+  tabsEl[i].addEventListener("click", function(){ setView(this.getAttribute("data-view")); });
+}
+
+boot();
+})();
+</script>
+</body>
+</html>

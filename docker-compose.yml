@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ward
+      POSTGRES_PASSWORD: ward-local-only
+      POSTGRES_DB: ward_council
+    volumes:
+      - ward_council_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ward -d ward_council"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  ward-council:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://ward:ward-local-only@db:5432/ward_council
+      APP_TZ: America/Los_Angeles
+      # Change both of these before putting this anywhere shared
+      SESSION_SECRET: change-me-to-a-long-random-string
+      SEED_PASSWORD: ward-council
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ward_council_pg:

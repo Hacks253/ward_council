@@ -1,0 +1,17 @@
+{
+  "name": "ward-council",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ward Council agenda, minutes, and archive — Phase 1",
+  "scripts": {
+    "start": "node server/index.js",
+    "add-user": "node server/adduser.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.1.0",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
