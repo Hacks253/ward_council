@@ -34,6 +34,10 @@
   .state.live .dot{background:var(--blue);animation:pulse 2s infinite}
   .state.closed{color:var(--green);border-color:var(--green)}
   .state.closed .dot{background:var(--green)}
+  .bar-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .outbtn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+  .outbtn:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+  .outbtn.hidden{display:none}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
   .live{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
@@ -213,7 +217,10 @@
         <h1>Ward Council</h1>
         <div class="date" id="hdrDate">&nbsp;</div>
       </div>
-      <div class="state" id="stateChip"><span class="dot"></span><span id="stateTxt">Loading</span></div>
+      <div class="bar-right">
+        <div class="state" id="stateChip"><span class="dot"></span><span id="stateTxt">Loading</span></div>
+        <button class="outbtn hidden" id="logoutBtn">Sign out</button>
+      </div>
     </div>
     <div class="live" id="live">
       <div class="live-row">
@@ -313,6 +320,7 @@ async function boot(){
     document.getElementById("tabs").classList.remove("hidden");
     document.getElementById("editTab").classList.toggle("hidden", !canOpenEdit());
     document.getElementById("peopleTab").classList.toggle("hidden", !canEdit());
+    document.getElementById("logoutBtn").classList.remove("hidden");
     render();
     if(!tickerStarted){ setInterval(tickLive, 1000); tickerStarted = true; }
   }catch(e){
@@ -327,6 +335,7 @@ async function boot(){
 function renderLogin(msg){
   STATE.user = null; STATE.meeting = null;
   document.getElementById("tabs").classList.add("hidden");
+  document.getElementById("logoutBtn").classList.add("hidden");
   document.getElementById("hdrDate").textContent = "Sign in to continue";
   var chip = document.getElementById("stateChip");
   chip.className = "state";
@@ -1234,6 +1243,7 @@ var tabsEl = document.querySelectorAll(".tab");
 for(var i=0;i<tabsEl.length;i++){
   tabsEl[i].addEventListener("click", function(){ setView(this.getAttribute("data-view")); });
 }
+document.getElementById("logoutBtn").addEventListener("click", logout);
 
 boot();
 })();
