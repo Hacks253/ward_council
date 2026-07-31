@@ -101,7 +101,7 @@
   details.notes > summary::-webkit-details-marker{display:none}
   details.notes > summary::after{content:" +";font-weight:700;margin-left:5px}
   details.notes[open] > summary::after{content:" \2013"}
-  textarea,input[type="text"],input[type="number"],input[type="password"],select{
+  textarea,input[type="text"],input[type="number"],input[type="password"],input[type="date"],select{
     font-family:var(--sans);font-size:15px;color:var(--ink);line-height:1.45;
     border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#FCFDFD;width:100%;
   }
@@ -207,6 +207,7 @@
       <button class="tab" role="tab" data-view="now" aria-selected="true">Meeting</button>
       <button class="tab" role="tab" data-view="edit" aria-selected="false" id="editTab">Edit</button>
       <button class="tab" role="tab" data-view="arc" aria-selected="false">Archive</button>
+      <button class="tab" role="tab" data-view="cal" aria-selected="false">Calendar</button>
       <button class="tab hidden" role="tab" data-view="people" aria-selected="false" id="peopleTab">People</button>
     </div>
   </div>
@@ -251,6 +252,9 @@ function pad(n){ return (n < 10 ? "0" : "") + n; }
 function isoOf(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
 function dateOf(iso){ var p = iso.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
 function fmtLong(iso){ return dateOf(iso).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}); }
+function fmtShort(iso){ return dateOf(iso).toLocaleDateString(undefined,{day:"numeric",month:"short"}); }
+function fmtRange(s,e){ return s === e ? fmtShort(s) : fmtShort(s) + " – " + fmtShort(e); }
+function addDays(iso,n){ var d = dateOf(iso); d.setDate(d.getDate()+n); return isoOf(d); }
 function clockAt(off){
   var t = START_H*60 + START_M + off, h = Math.floor(t/60), m = t%60;
   var ap = h >= 12 ? "p.m." : "a.m.", hh = (h % 12) === 0 ? 12 : h % 12;
@@ -265,7 +269,7 @@ function elapsed(iso){
 }
 
 /* ============ state ============ */
-var STATE = { view:"now", user:null, meeting:null, index:[], viewing:null };
+var STATE = { view:"now", user:null, meeting:null, index:[], viewing:null, absences:[] };
 var OUTS = ["Decided","Assigned","Deferred","Referred"];
 var TAGS = ["","Counsel","Decide","Coordinate"];
 var tickerStarted = false;
@@ -406,6 +410,7 @@ function tickLive(){
     txt.textContent = STATE.view === "arc" ? "Records"
                      : STATE.view === "edit" ? "Editing"
                      : STATE.view === "people" ? "Admin"
+                     : STATE.view === "cal" ? "Away"
                      : (m.status === "closed" ? "Archived" : "Draft");
     return;
   }
@@ -646,8 +651,8 @@ function renderEdit(){
 
   /* lists */
   h += listEditor("Open assignments", "assignments", m.assignments, ["t","o","d"], ["What","Who","When"]);
-  h += listEditor("Away", "away", m.away, ["n","w"], ["Who","When"]);
   h += listEditor("Calendar", "calendar", m.calendar, ["n","w"], ["What","When"]);
+  h += '<div class="hint" style="text-align:left">Time away is managed on the Calendar tab and flows into the agenda automatically.</div>';
 
   h += '<div class="actions"><button class="btn ghost" id="backBtn">Back to the meeting</button></div>';
   h += footerHTML();
@@ -655,6 +660,94 @@ function renderEdit(){
   app.innerHTML = h;
   wireEdit();
   wireFooter();
+}
+
+/* ============ render: calendar (time away, open to everyone) ============ */
+async function renderCalendarView(){
+  var app = el("app");
+  app.innerHTML = '<div class="empty-state">Loading&hellip;</div>';
+  try{
+    var r = await api("/api/absences");
+    STATE.absences = r.absences;
+    syncAwayIntoMeeting();
+    drawCalendar();
+  }catch(e){
+    if(e.status === 401){ renderLogin("Your session expired - sign in again"); return; }
+    app.innerHTML = '<div class="empty-state">Could not load the calendar.<br>' + esc(e.message) + '</div>' + footerHTML();
+    wireFooter();
+  }
+}
+
+function drawCalendar(){
+  var app = el("app");
+  var today = isoOf(new Date());
+  var upcoming = STATE.absences.filter(function(a){ return a.ends_on >= today; });
+
+  var h = '<div class="banner edit">Add when people will be gone. The agenda\'s &ldquo;Away&rdquo; section pulls from this automatically.</div>';
+
+  h += '<section class="panel"><h2>Add time away</h2>';
+  h += '<div class="ed-row"><input type="text" class="grow" id="abName" list="rosterNames" placeholder="Who"></div>';
+  h += '<datalist id="rosterNames">' + ((STATE.meeting && STATE.meeting.roster) || []).map(function(n){
+    return '<option value="' + esc(n) + '">';
+  }).join("") + '</datalist>';
+  h += '<div class="ed-row"><input type="date" class="grow" id="abFrom" aria-label="First day away"><input type="date" class="grow" id="abTo" aria-label="Last day away"></div>';
+  h += '<button class="mini add" id="abAdd">+ Add</button>';
+  h += '<div class="hint" style="text-align:left">First day and last day. Leave the second date empty for a single day.</div>';
+  h += '</section>';
+
+  h += '<section class="panel"><h2>Away now and upcoming</h2>';
+  if(!upcoming.length){
+    h += '<div class="hint" style="text-align:left;margin:0">No one has time away listed.</div>';
+  } else {
+    h += '<ul class="rows">' + upcoming.map(function(a){
+      return '<li class="split"><span>' + esc(a.name) +
+             '<span class="meta">' + esc(fmtRange(a.starts_on, a.ends_on)) + '</span></span>' +
+             '<button class="mini del" data-delabs="' + a.id + '">Remove</button></li>';
+    }).join("") + '</ul>';
+  }
+  h += '</section>' + footerHTML();
+
+  app.innerHTML = h;
+  wireCalendar();
+  wireFooter();
+}
+
+/* Keep the already-loaded meeting's Away section current without a refetch. */
+function syncAwayIntoMeeting(){
+  var m = STATE.meeting;
+  if(!m || m.status === "closed") return;
+  var windowEnd = addDays(m.date, 30);
+  m.away = STATE.absences
+    .filter(function(a){ return a.ends_on >= m.date && a.starts_on <= windowEnd; })
+    .map(function(a){ return { id: "ab" + a.id, n: a.name, w: fmtRange(a.starts_on, a.ends_on) }; });
+}
+
+function wireCalendar(){
+  var app = el("app");
+  var add = el("abAdd");
+  if(add) add.addEventListener("click", async function(){
+    var name = (el("abName").value || "").trim();
+    var from = el("abFrom").value;
+    var to = el("abTo").value || from;
+    if(!name){ toast("Add a name"); return; }
+    if(!from){ toast("Pick a date"); return; }
+    try{
+      var r = await api("/api/absences", { method:"POST", body:{ name:name, startsOn:from, endsOn:to } });
+      STATE.absences = r.absences;
+      syncAwayIntoMeeting();
+      drawCalendar();
+      toast("Added");
+    }catch(e){ toast(e.message); }
+  });
+  on(app, "[data-delabs]", "click", async function(t){
+    try{
+      var r = await api("/api/absences/" + t.getAttribute("data-delabs"), { method:"DELETE" });
+      STATE.absences = r.absences;
+      syncAwayIntoMeeting();
+      drawCalendar();
+      toast("Removed");
+    }catch(e){ toast(e.message); }
+  });
 }
 
 /* ============ render: people (admin page, full access only) ============ */
@@ -1014,6 +1107,9 @@ function render(){
   if(STATE.view === "people"){
     el("hdrDate").textContent = "People and access";
     renderPeopleView();
+  } else if(STATE.view === "cal"){
+    el("hdrDate").textContent = "Who will be away";
+    renderCalendarView();
   } else if(STATE.view === "arc"){
     el("hdrDate").textContent = "Past minutes";
     renderArchive();

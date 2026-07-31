@@ -42,6 +42,12 @@ async function init() {
       payload    JSONB NOT NULL,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS absences (
+      id        SERIAL PRIMARY KEY,
+      name      TEXT NOT NULL,
+      starts_on TEXT NOT NULL,
+      ends_on   TEXT NOT NULL
+    );
   `);
   await seedUsersIfEmpty();
 }
@@ -135,6 +141,21 @@ export async function closeMeetingRow(date, payload, closedAt) {
 export async function listIndex() {
   const { rows } = await pool.query('SELECT date, status FROM meetings ORDER BY date');
   return rows;
+}
+
+/* ---- absences (council-level; agenda "Away" sections derive from these) ---- */
+
+export async function listAbsences() {
+  const { rows } = await pool.query('SELECT * FROM absences ORDER BY starts_on, ends_on, name');
+  return rows;
+}
+
+export async function insertAbsence(name, startsOn, endsOn) {
+  await pool.query('INSERT INTO absences (name, starts_on, ends_on) VALUES ($1, $2, $3)', [name, startsOn, endsOn]);
+}
+
+export async function deleteAbsence(id) {
+  await pool.query('DELETE FROM absences WHERE id = $1', [id]);
 }
 
 /* ---- snapshots (insert-only; never updated) ---- */

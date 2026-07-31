@@ -90,10 +90,8 @@ export function template(date) {
       { id: uid(), t: 'Ward council agenda', o: 'Josh', d: 'weekly' },
       { id: uid(), t: 'Single adult conference', o: 'Sis. Reed', d: 'due 9 Aug' }
     ],
-    away: [
-      { id: uid(), n: 'Greg', w: '29 Jul - 2 Aug' },
-      { id: uid(), n: 'Lewis', w: '15 - 22 Aug' }
-    ],
+    /* Derived from the shared absences calendar on read and at close. */
+    away: [],
     calendar: [
       { id: uid(), n: 'Baptism', w: 'Sat 1 Aug' },
       { id: uid(), n: 'Girls Camp', w: 'August' },

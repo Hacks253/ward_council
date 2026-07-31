@@ -17,7 +17,16 @@ const dateOf = iso => { const [y, m, d] = iso.split('-').map(Number); return new
 const isoOf = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 const addDays = (iso, n) => { const d = dateOf(iso); d.setUTCDate(d.getUTCDate() + n); return isoOf(d); };
 const fmtShort = iso => dateOf(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const fmtRange = (s, e) => (s === e ? fmtShort(s) : fmtShort(s) + ' – ' + fmtShort(e));
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/* The agenda's "Away" section: absences overlapping the 30 days from a date. */
+function awayForDate(dateIso, absences) {
+  const windowEnd = addDays(dateIso, 30);
+  return absences
+    .filter(a => a.ends_on >= dateIso && a.starts_on <= windowEnd)
+    .map(a => ({ id: 'ab' + a.id, n: a.name, w: fmtRange(a.starts_on, a.ends_on) }));
+}
 
 /* The Sunday this app should be showing: today if Sunday, else the next one. */
 function activeSunday() {
@@ -158,10 +167,14 @@ export function createApp({ serveStatic = false } = {}) {
         row = await store.getMeeting(today);
       }
       const meeting = row.status === 'closed' ? (await store.getSnapshot(today) || row.payload) : row.payload;
+      const out = redactForRole(meeting, req.user.role);
+      /* Drafts derive Away from the shared absences calendar; snapshots keep
+         the frozen copy written at close. */
+      if (row.status !== 'closed') out.away = awayForDate(today, await store.listAbsences());
       res.json({
         user: pub(req.user),
         today,
-        meeting: redactForRole(meeting, req.user.role),
+        meeting: out,
         index: await store.listIndex()
       });
     } catch (e) { next(e); }
@@ -198,6 +211,7 @@ export function createApp({ serveStatic = false } = {}) {
       const snap = structuredClone(row.payload);
       snap.status = 'closed';
       snap.closedAt = closedAt;
+      snap.away = awayForDate(date, await store.listAbsences());
       await store.insertSnapshot(date, snap, closedAt);
       await store.closeMeetingRow(date, snap, closedAt);
 
@@ -214,7 +228,7 @@ export function createApp({ serveStatic = false } = {}) {
         const nm = template(nextDate);
         nm.roster = snap.roster.slice();
         nm.assignments = structuredClone(snap.assignments);
-        nm.away = structuredClone(snap.away);
+        nm.away = [];
         nm.calendar = structuredClone(snap.calendar);
         addCarried(nm, carried);
         await store.insertMeeting(nextDate, 'draft', nm);
@@ -227,6 +241,34 @@ export function createApp({ serveStatic = false } = {}) {
         meeting: redactForRole(snap, req.user.role),
         index: await store.listIndex()
       });
+    } catch (e) { next(e); }
+  });
+
+  /* ---- absences (the Calendar tab; open to every signed-in member) ---- */
+
+  app.get('/api/absences', requireAuth, async (req, res, next) => {
+    try { res.json({ absences: await store.listAbsences() }); } catch (e) { next(e); }
+  });
+
+  app.post('/api/absences', requireAuth, async (req, res, next) => {
+    try {
+      const name = String(req.body?.name || '').trim().slice(0, 80);
+      let s = String(req.body?.startsOn || '');
+      let e2 = String(req.body?.endsOn || '') || s;
+      if (!name) return res.status(400).json({ error: 'Who is away?' });
+      if (!DATE_RE.test(s) || !DATE_RE.test(e2)) return res.status(400).json({ error: 'Pick valid dates' });
+      if (e2 < s) [s, e2] = [e2, s];
+      await store.insertAbsence(name, s, e2);
+      res.json({ absences: await store.listAbsences() });
+    } catch (e) { next(e); }
+  });
+
+  app.delete('/api/absences/:id', requireAuth, async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Bad id' });
+      await store.deleteAbsence(id);
+      res.json({ absences: await store.listAbsences() });
     } catch (e) { next(e); }
   });
 
