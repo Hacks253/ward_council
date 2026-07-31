@@ -222,6 +222,8 @@ export function createApp({ serveStatic = false } = {}) {
           id: uid(), h: b.title, p: 'Deferred last week - needs a decision',
           tag: 'Carried ' + fmtShort(date), carry: true, sens: false
         }));
+      const nextWeekEntries = (snap.nextWeek || [])
+        .filter(e => e && String(e.h || '').trim() && String(e.p || '').trim());
 
       const nextRow = await store.getMeeting(nextDate);
       if (!nextRow) {
@@ -231,9 +233,11 @@ export function createApp({ serveStatic = false } = {}) {
         nm.away = [];
         nm.calendar = structuredClone(snap.calendar);
         addCarried(nm, carried);
+        applyNextWeek(nm, nextWeekEntries);
         await store.insertMeeting(nextDate, 'draft', nm);
-      } else if (nextRow.status === 'draft' && carried.length) {
+      } else if (nextRow.status === 'draft' && (carried.length || nextWeekEntries.length)) {
         addCarried(nextRow.payload, carried);
+        applyNextWeek(nextRow.payload, nextWeekEntries);
         await store.updateMeetingPayload(nextDate, nextRow.payload);
       }
 
@@ -296,4 +300,22 @@ function addCarried(m, carried) {
   if (!carried.length) return;
   const target = m.blocks.find(b => /council items/i.test(b.title)) || m.blocks[0];
   if (target) target.points = carried.concat(target.points || []);
+}
+
+/* "Next week" assignments made in the closing meeting: a row whose What
+   matches a point heading (e.g. Prayer) fills that point's detail in;
+   anything else is appended to the opening block as a new point. */
+function applyNextWeek(m, entries) {
+  const norm = s => String(s || '').trim().toLowerCase();
+  for (const en of entries) {
+    let hit = null;
+    for (const b of m.blocks) {
+      hit = (b.points || []).find(pt => norm(pt.h) === norm(en.h));
+      if (hit) break;
+    }
+    if (hit) hit.p = en.p;
+    else if (m.blocks[0]) {
+      m.blocks[0].points.push({ id: uid(), h: en.h, p: en.p, tag: '', carry: false, sens: false });
+    }
+  }
 }

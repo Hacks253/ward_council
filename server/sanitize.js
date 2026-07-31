@@ -50,6 +50,7 @@ export function sanitizeMeeting(input, date) {
   }
   const row3 = r => ({ id: id(r && r.id), t: str(r && r.t, 300), o: str(r && r.o, 120), d: str(r && r.d, 120) });
   const row2 = r => ({ id: id(r && r.id), n: str(r && r.n, 300), w: str(r && r.w, 120) });
+  const nwRow = r => ({ id: id(r && r.id), h: str(r && r.h, 120), p: str(r && r.p, 300) });
   return {
     v: 3,
     date,
@@ -59,7 +60,8 @@ export function sanitizeMeeting(input, date) {
     blocks: arr(m.blocks, 30).map(sanitizeBlock),
     assignments: arr(m.assignments, 100).map(row3),
     away: arr(m.away, 100).map(row2),
-    calendar: arr(m.calendar, 100).map(row2)
+    calendar: arr(m.calendar, 100).map(row2),
+    nextWeek: arr(m.nextWeek, 30).map(nwRow)
   };
 }
 

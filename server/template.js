@@ -23,8 +23,8 @@ export function template(date) {
       {
         id: uid(), title: 'Open', dur: 10, tag: '', lead: '',
         points: [
-          pt('Prayer', 'Assigned Sunday'),
-          pt('Spiritual thought', 'Sis. Mang, on revelation'),
+          pt('Prayer', ''),
+          pt('Spiritual thought', ''),
           pt('Handbook training', 'Bp. Bradshaw, 4.4 Effective Councils')
         ],
         held: '', notes: '', outcome: '', ph: "Training takeaway, next week's assignment..."
@@ -92,6 +92,12 @@ export function template(date) {
     ],
     /* Derived from the shared absences calendar on read and at close. */
     away: [],
+    /* Assignments for next Sunday, applied to its draft when this meeting
+       closes. Standing slots are seeded empty each week. */
+    nextWeek: [
+      { id: uid(), h: 'Prayer', p: '' },
+      { id: uid(), h: 'Spiritual thought', p: '' }
+    ],
     calendar: [
       { id: uid(), n: 'Baptism', w: 'Sat 1 Aug' },
       { id: uid(), n: 'Girls Camp', w: 'August' },

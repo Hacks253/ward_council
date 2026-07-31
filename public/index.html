@@ -649,6 +649,30 @@ function renderMeeting(m, ro){
   }).join("") + '</div>';
   if(admin) h += '<button class="mini add" id="addBlock">+ Add agenda item</button>';
 
+  /* next-week assignments (admin capture, applied at close) */
+  if(admin){
+    if(!m.nextWeek) m.nextWeek = [];
+    var nwFilled = m.nextWeek.filter(function(r){ return (r.p || "").trim(); });
+    var nwInner = m.nextWeek.map(function(r){
+      return '<div class="pt">' +
+        '<div class="ed-row"><input type="text" class="grow" data-nwf="h" data-nw="' + esc(r.id) + '" value="' + esc(r.h) + '" placeholder="What (e.g. Prayer)">' +
+        '<button class="mini del" data-delnw="' + esc(r.id) + '">Remove</button></div>' +
+        '<div class="ed-row"><input type="text" class="grow" data-nwf="p" data-nw="' + esc(r.id) + '" value="' + esc(r.p) + '" placeholder="Who / details for next Sunday"></div>' +
+        '</div>';
+    }).join("");
+    nwInner += '<button class="mini add" data-addnw>+ Add for next week</button>';
+    nwInner += '<div class="hint" style="text-align:left;margin:6px 0 0">Filled rows land on next Sunday\'s agenda when this meeting is closed. A row matching an item heading, like Prayer, fills that item in.</div>';
+    h += foldHTML("Next week", nwFilled.length, nwInner, nwFilled.length > 0);
+  } else if(ro){
+    var nwDone = (m.nextWeek || []).filter(function(r){ return (r.p || "").trim(); });
+    if(nwDone.length){
+      h += foldHTML("Next week", nwDone.length,
+        '<ul class="rows">' + nwDone.map(function(r){
+          return '<li>' + esc(r.h) + '<span class="meta">' + esc(r.p) + '</span></li>';
+        }).join("") + '</ul>', false);
+    }
+  }
+
   /* folds */
   var assignInner;
   if(admin && STATE.editLists.assignments){
@@ -834,6 +858,25 @@ function wireMeeting(){
   });
   var np = el("newPerson");
   if(np) np.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); addP.click(); } });
+
+  /* next-week assignments */
+  on(app, "[data-nwf]", "input", function(t){
+    if(!m.nextWeek) return;
+    var r = find(m.nextWeek, t.getAttribute("data-nw")); if(!r) return;
+    r[t.getAttribute("data-nwf")] = t.value;
+    queueSave();
+  });
+  on(app, "[data-delnw]", "click", function(t){
+    if(!m.nextWeek) return;
+    var i = idxOf(m.nextWeek, t.getAttribute("data-delnw"));
+    if(i > -1) m.nextWeek.splice(i,1);
+    queueSave(); renderNow();
+  });
+  on(app, "[data-addnw]", "click", function(t){
+    if(!m.nextWeek) m.nextWeek = [];
+    m.nextWeek.push({id:uid(), h:"", p:""});
+    queueSave(); renderNow();
+  });
 
   /* assignment and calendar-item lists */
   on(app, "[data-editlist]", "click", function(t){
